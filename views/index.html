@@ -1,0 +1,17 @@
+<html>
+<head>
+</head>
+<body>
+
+<ul>
+{{#services}}
+{{#has_token}}
+<li><a style="color:green" href="/auth/{{name}}">{{name}}</a></li>
+{{/has_token}}
+{{^has_token}}
+<li><a style="color:gray" href="/auth/{{name}}">{{name}}</a></li>
+{{/has_token}}
+{{/services}}
+</ul>
+</body>
+</html>
