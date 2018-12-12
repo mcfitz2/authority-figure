@@ -1,0 +1,10 @@
+db: 
+  image: mongo
+  restart: always
+  volumes:
+    - /var/lib/mongodb:/data/db
+authority-figure:
+  build: auth
+  container_name: authority-figure
+  env_file:
+    - .env

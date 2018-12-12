@@ -80,6 +80,6 @@ if (module == require.main) {
 			});
 		}
 	});
-	mongoose.connect('mongodb://localhost/packy');
+	mongoose.connect(process.env.MONGODB_URI);
 
 }
