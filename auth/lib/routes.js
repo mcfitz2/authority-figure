@@ -1,13 +1,14 @@
 var passport = require("passport");
 var mongoose = require("mongoose");
-
+var Service = mongoose.model("Service");
+var User = mongoose.model("User");
 function ensureAuthenticated(req, res, next) {
 	if (req.isAuthenticated())
 		return next();
 	else
 		res.redirect("login");
 }
-module.exports = function (app, Service) {
+module.exports = function (app) {
 	app.post('/login',
 		passport.authenticate('local'),
 		function (req, res) {
@@ -16,6 +17,32 @@ module.exports = function (app, Service) {
 		});
 	app.get("/login", function (req, res) {
 		res.render("login");
+	});
+	app.get("/register", function(req, res) {
+		res.render("register");
+	});
+	app.post("/register", function(req, res) {
+		console.log(req.body);
+		User.findOne({
+                     username: req.body.username
+                }, function (err, user) {
+	                if (!user) {
+        	                var u = new User({
+                 	               username: req.body.username,
+                                       name: req.body.name,
+                                       password: req.body.password,
+                                 });
+                                 u.save(function (err) {
+					if (err) {
+						return res.send(err);
+					}
+                                	console.log("User created", err);
+					return res.redirect("/login");
+                                 });
+			} else {
+				return res.redirect("/login");
+			}
+                });
 	});
 	app.get("/", ensureAuthenticated, function (req, res) {
 		services = app.available_services;
@@ -36,6 +63,9 @@ module.exports = function (app, Service) {
 	for (var i = 0; i < app.available_services.length; i++) {
 		var item = app.available_services[i];
 		var options = {}
+                if (item.name == "lastfm") {
+                        continue
+                }
 		if (item.scope) {
 			options.scope = item.scope;
 		}
@@ -50,7 +80,28 @@ module.exports = function (app, Service) {
 			res.redirect('/');
 		});
 	}
-
+        app.get('/auth/lastfm', ensureAuthenticated, (req, res) => {
+                res.render("lastfm")
+        });
+        app.post('/auth/lastfm/callback', ensureAuthenticated, (req, res) => {
+                Service.findOneAndUpdate({
+                                name: 'lastfm',
+                                user: req.user.id,
+                        }, {
+                                access_token: null,
+                                refresh_token: null,
+                                service_user_id: req.body.lastfm_username,
+                        }, {
+                                upsert: true
+                        },
+                        function (err, service) {
+                             if (err) {
+                                res.send(500)
+                                } else {
+                                res.redirect("/")
+                                }
+                        });
+        });
 	app.get("/get/:service", passport.authenticate("basic"), function (req, res) {
 		Service.findOne({
 			name: req.params.service,

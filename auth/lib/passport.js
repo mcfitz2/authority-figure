@@ -3,13 +3,13 @@ var LocalStrategy = require('passport-local').Strategy,
 	BasicStrategy = require('passport-http').BasicStrategy;
 
 var mongoose = require("mongoose");
-var User = require("./user.js");
-module.exports = function (app, Service) {
+var User = mongoose.model("User");
+var Service = mongoose.model("Service");
+module.exports = function (app) {
 	function callback(req, accessToken, refreshToken, profile, done) {
-
-		console.log(profile, req);
-		profile.access_token = accessToken;
-		profile.refresh_token = refreshToken;
+		console.log(accessToken, refreshToken, profile);
+                        profile.access_token = accessToken;
+        		profile.refresh_token = refreshToken;
 		Service.findOneAndUpdate({
 				name: profile.provider,
 				user: req.user.id,
@@ -97,8 +97,12 @@ module.exports = function (app, Service) {
 	));
 	for (var i = 0; i<app.available_services.length; i++) {
 		var item = app.available_services[i];
+		if (item.name == "lastfm") {
+                        continue
+                }
 		var Strategy = require(item.passport_module_name)[item.passport_strategy];
-		if (item.name == "twitter") {
+
+                if (item.name == "twitter") {
 			passport.use(new Strategy({
 				consumerKey: process.env[item.name+'_client_id'],
 				consumerSecret: process.env[item.name+'_client_secret'],

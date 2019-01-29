@@ -24,7 +24,9 @@ app.available_services = [
 //	{name:'foursquare', scope:null, passport_module_name:"passport-fitbit-oauth2", passport_strategy:"Strategy"},},
 //	{name:'dropbox', scope:null, passport_module_name:"passport-fitbit-oauth2", passport_strategy:"Strategy"},},
 //	{name:'instagram', scope:null, passport_module_name:"passport-fitbit-oauth2", passport_strategy:"Strategy"},},
-	{name:'automatic', scope:null, passport_module_name:"passport-automatic", passport_strategy:"Strategy"}
+	{name:'automatic', scope:null, passport_module_name:"passport-automatic", passport_strategy:"Strategy"},
+	{name:'lastfm'},
+	{name:'spotify', scope:'user-top-read user-read-email playlist-read-collaborative user-read-birthdate user-library-modify user-follow-read streaming user-read-private user-read-playback-state playlist-modify-public user-follow-modify user-library-read user-modify-playback-state playlist-read-private playlist-modify-private app-remote-control user-read-currently-playing user-read-recently-played', passport_module_name:"passport-spotify", passport_strategy:"Strategy"}
 ];
 app.set('view engine', 'html');
 app.engine('html', require('hogan-express'));
@@ -44,7 +46,7 @@ var Service = mongoose.model("Service", new mongoose.Schema({
 	}
 
 }));
-
+var User = mongoose.model("User", require("./lib/user.js"));
 db = mongoose.connection;
 db.on("error", function (err) {
 	console.log(err);
@@ -52,14 +54,14 @@ db.on("error", function (err) {
 db.once("open", function () {
 	console.log(process.env);
 
-	require("./lib/passport.js")(app, Service);
-	require("./lib/routes.js")(app, Service);
+	require("./lib/passport.js")(app);
+	require("./lib/routes.js")(app);
 
 //	app.listen(process.env.PORT || 3000);
 	https.createServer({
   		key: fs.readFileSync('server.key'),
   		cert: fs.readFileSync('server.cert')
-	}, app).listen(process.env.PORT || 5555, () => {
+	}, app).listen(5555, () => {
 		console.log('Listening...')
 	})
 

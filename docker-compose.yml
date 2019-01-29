@@ -1,10 +1,65 @@
-db: 
-  image: mongo
-  restart: always
-  volumes:
-    - /var/lib/mongodb:/data/db
-authority-figure:
-  build: auth
-  container_name: authority-figure
-  env_file:
-    - .env
+version: '3'
+services:
+  db: 
+    image: mongo
+    restart: always
+    volumes:
+      - ./mongo:/data/db
+    ports:
+      - 27018:27017
+    env_file:
+      - .env
+  auth:
+    build: auth
+    env_file:
+      - .env
+    ports:
+      - 5555:5555
+    depends_on:
+      - db
+  adminmongo:
+    image: mrvautin/adminmongo
+    env_file:
+      - .env
+    ports:
+      - 1234:1234
+    depends_on:
+      - db
+  fitbit_loader:
+    build: jobs/fitbit_loader
+    env_file:
+      - .env
+    entrypoint: ["echo", "Service disabled"]
+
+  lastfm_loader:
+    build: jobs/lastfm_loader
+    env_file:
+      - .env
+    entrypoint: ["echo", "Service disabled"]
+
+  create_dates_transformer:
+    build: jobs/create_dates_transformer
+    env_file:
+      - .env
+    entrypoint: ["echo", "Service disabled"]
+
+  stats_task:
+    build: jobs/stats_task
+    env_file:
+      - .env
+    entrypoint: ["echo", "Service disabled"]
+  scheduler:
+    build: scheduler/
+    volumes:
+      - ./:/compose
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - COMPOSE_NAME=dw2
+    env_file:
+      - .env
+  owntracks_service:
+    build: services/owntracks
+    env_file:
+      - services/owntracks/.env
+    ports:
+      - 1240:1240

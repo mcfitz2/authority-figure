@@ -1,0 +1,10 @@
+import os, datetime, pprint, time, sys
+from dateutil import parser
+from pymongo import MongoClient
+client = MongoClient(os.environ['MONGODB_URI'])
+
+print("Connected to DB")
+
+last_run = client['auth']['transformer_runs'].findone({"name":"location_transformer"}).sort({"timestamp":-1})
+if last_run:
+        last_run_date = last_run['timestamp']

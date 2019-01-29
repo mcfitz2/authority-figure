@@ -44,8 +44,8 @@ userSchema.methods.comparePassword = function (candidatePassword, cb) {
 		cb(null, isMatch);
 	});
 };
-var User = mongoose.model('User', userSchema);
-module.exports = User;
+//var User = mongoose.model('User', userSchema);
+module.exports = userSchema;
 
 
 if (module == require.main) {

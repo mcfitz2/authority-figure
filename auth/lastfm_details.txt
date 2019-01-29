@@ -1,0 +1,4 @@
+Application name        dw
+API key 9bd54438a9bebcefaa925b85af9ce8cb
+Shared secret   78c8298d927f52553060f54a9265d493
+Registered to   mcfitz2

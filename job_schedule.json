@@ -1,0 +1,9 @@
+{
+        "jobs":{
+                "create_dates_transformer":{"interval":5, "unit":"minutes"},
+                "stats_task":{"interval":5, "unit":"minutes"},
+                "location_transformer":{"interval":10, "unit":"minutes"},
+                "fitbit_loader":{"interval":1, "unit":"hours"},
+                "lastfm_loader":{"interval":2, "unit":"hours"}
+        }
+}
