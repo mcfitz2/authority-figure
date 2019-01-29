@@ -1,5 +1,5 @@
 import docker, os, time, logging, json
-import schedule
+import schedule, pprint
 from yaml import load, dump
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
@@ -36,7 +36,18 @@ def job(image):
                 if service == app_name+"_"+image:
                         logging.info("running container "+ image)
                         logging.debug("%s %s_default" % (service, app_name))
-                        container = client.containers.run(service, environment=env, network=app_name+"_default", name=app_name+"_"+image)
+                        try:
+                                existing = client.containers.get(app_name+"_"+image)
+                                logging.info("container exists with status: %s" % existing.status)
+                                if existing.status == "running":
+                                        logging.info("container is running. skipping...")
+                                        return
+                                else:
+                                        logging.info("container is stopped, removing and recreating...")
+                                        existing.remove()
+                        except docker.errors.NotFound:
+                                pass
+                        container = client.containers.run(service, detach=True,environment=env, network=app_name+"_default", name=app_name+"_"+image)
                         return
 def load_sched():
         schedule.clear()
