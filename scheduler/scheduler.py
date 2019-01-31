@@ -17,38 +17,21 @@ logging.basicConfig(
 client = docker.DockerClient(base_url='unix://var/run/docker.sock')
 services = {}
 app_name = os.environ['COMPOSE_NAME']
-def build_env(base_path, files):
-        if files:
-                env = {}
-                for file in files:
-                        env.update(dotenv_values(os.path.join(base_path, file)))
-                return env
-        else:
-                return {}
 
-with open(os.path.join(compose_dir,"docker-compose.yml"), 'r') as f2:
-        data = load(f2, Loader=Loader)
-        for service in data['services']:
-                services[app_name+"_"+service] = build_env(compose_dir, data['services'][service].get('env_file', None))
-
-def job(image):
-        for service, env in services.items():
-                if service == app_name+"_"+image:
-                        logging.info("running container "+ image)
-                        logging.debug("%s %s_default" % (service, app_name))
-                        try:
-                                existing = client.containers.get(app_name+"_"+image)
-                                logging.info("container exists with status: %s" % existing.status)
-                                if existing.status == "running":
-                                        logging.info("container is running. skipping...")
-                                        return
-                                else:
-                                        logging.info("container is stopped, removing and recreating...")
-                                        existing.remove()
-                        except docker.errors.NotFound:
-                                pass
-                        container = client.containers.run(service, detach=True,environment=env, network=app_name+"_default", name=app_name+"_"+image)
+def job(image, env):
+        logging.info("running container "+ image)
+        try:
+                existing = client.containers.get(app_name+"_"+image.split(":")[1])
+                logging.info("container exists with status: %s" % existing.status)
+                if existing.status == "running":
+                        logging.info("container is running. skipping...")
                         return
+                else:
+                       logging.info("container is stopped, removing and recreating...")
+                       existing.remove()
+        except docker.errors.NotFound:
+                pass
+        container = client.containers.run(image, detach=True,environment=dotenv_values(os.path.join(compose_dir, env)), network=app_name+"_default", name=app_name+"_"+image.split(":")[1])
 def load_sched():
         schedule.clear()
         with open(os.path.join(compose_dir, "job_schedule.json")) as f:
@@ -56,7 +39,7 @@ def load_sched():
                 for jobname, s in sched['jobs'].items():
                         j = schedule.every(s['interval'])
                         j = getattr(j, s['unit'])
-                        j.do(job, jobname)
+                        j.do(job, jobname, s['env'])
 
 load_sched()
 logging.info("Scheduler running")

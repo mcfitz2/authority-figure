@@ -11,45 +11,51 @@ services:
       - .env
   auth:
     build: auth
+    image: mcfitz2/dw:auth
     env_file:
       - .env
     ports:
       - 5555:5555
     depends_on:
       - db
-  adminmongo:
-    image: mrvautin/adminmongo
-    env_file:
-      - .env
-    ports:
-      - 1234:1234
-    depends_on:
-      - db
   fitbit_loader:
     build: jobs/fitbit_loader
+    image: mcfitz2/dw:fitbit_loader
     env_file:
       - .env
     entrypoint: ["echo", "Service disabled"]
 
   lastfm_loader:
     build: jobs/lastfm_loader
+    image: mcfitz2/dw:lastfm_loader
     env_file:
       - .env
     entrypoint: ["echo", "Service disabled"]
 
   create_dates_transformer:
     build: jobs/create_dates_transformer
+    image: mcfitz2/dw:create_dates_transformer
     env_file:
       - .env
     entrypoint: ["echo", "Service disabled"]
 
   stats_task:
     build: jobs/stats_task
+    image: mcfitz2/dw:stats_task
     env_file:
       - .env
     entrypoint: ["echo", "Service disabled"]
+  location_transformer:
+    build: jobs/location_transformer
+    image: mcfitz2/dw:location_transformer
+    env_file:
+      - .env
+    entrypoint: ["echo", "Service disabled"]
+
   scheduler:
     build: scheduler/
+    restart: always
+    image: mcfitz2/dw:scheduler
     volumes:
       - ./:/compose
       - /var/run/docker.sock:/var/run/docker.sock
@@ -58,6 +64,7 @@ services:
     env_file:
       - .env
   owntracks_service:
+    image: mcfitz2/dw:owntracks_service
     build: services/owntracks
     env_file:
       - services/owntracks/.env

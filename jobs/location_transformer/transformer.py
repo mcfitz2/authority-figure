@@ -1,6 +1,4 @@
-import fitbit
 import os, datetime, pprint, time, sys
-from dateutil import parser
 from pymongo import MongoClient, UpdateOne
 import pymongo
 client = MongoClient(os.environ['MONGODB_URI'])

@@ -1,13 +1,19 @@
-import fitbit
+import fitbit, pprint
 import os, datetime, pprint, time, sys
 from dateutil import parser
 from pymongo import MongoClient
+import logging
+
+logging.basicConfig(
+    format='%(asctime)s %(levelname)-8s %(message)s',
+    level=logging.INFO,
+    datefmt='%Y-%m-%d %H:%M:%S')
 client = MongoClient(os.environ['MONGODB_URI'])
 
-print("Connected to DB")
+logging.info("Connected to DB")
 def refresh_token(token):
         client['auth']['services'].find_one_and_update({"name":"fitbit"}, {"$set":{"access_token":token['access_token'], "refresh_token":token['refresh_token']}})
-        print("Refreshed token")
+        logging.info("Refreshed token")
 
 def buildDateList(start, end):
         delta = end - start
@@ -19,15 +25,15 @@ def puller(dl, func, service, fb):
         for d in dl:
                 if d.date() == datetime.datetime.today().date():
                         continue
-                print(service['name'], repr(func), service['user'], d)
+                logging.info("%s %s %s %s" % (service['name'], repr(func), service['user'], d))
                 while True:
                         try:
                                 func(d, service, fb)
                                 break
                         except fitbit.exceptions.HTTPTooManyRequests as e:
-                                print("hit rate limit, waiting", e.retry_after_secs, "seconds")
+                                logging.info("hit rate limit, waiting %s seconds" % (e.retry_after_secs))
                                 if os.environ['BREAK_ON_TOOMANY'] == 'true':
-                                        print("Canceling...")
+                                        logging.info("Canceling...")
                                         return True
                                 else:
                                         time.sleep(e.retry_after_secs)
@@ -39,9 +45,13 @@ def missing_days(collection, service, fb):
                 user = fb.user_profile_get()['user']
                 user['dw_user_id'] = service['user']
                 client['auth']['fitbit_user'].find_one_and_update({'encodedId':user['encodedId']}, {"$set":user}, upsert=True)
+        logging.info("getting missing days for %s" % (collection))
+        logging.info("days in db: %d" % (len(days_in_db)))
         join_date = parser.parse(user['memberSince'])
         days_since_joining = buildDateList(join_date, datetime.datetime.today())
         days_to_pull = list(set(days_since_joining).difference(days_in_db))
+        logging.info("join date: %s" % (join_date))
+        logging.info("days to pull: %s" % (len(days_to_pull)))
         return days_to_pull
 def heart_series(d, service, fb):
         data = fb.intraday_time_series('activities/heart', base_date=d)
@@ -118,7 +128,7 @@ def foods_log(d, service, fb):
 def collect():
         services = client['auth']['services'].find({"name":"fitbit"})
         for service in services:
-                print("Collecting data for", service['user'])
+                logging.info("Collecting data for %s" % (service['user']))
                 fb = fitbit.Fitbit(os.environ['fitbit_client_id'], os.environ['fitbit_client_secret'], access_token=service['access_token'], refresh_token=service['refresh_token'], refresh_cb=refresh_token)
                 r = puller(missing_days('fitbit_heart_series', service, fb), heart_series, service, fb)
                 if r: return
@@ -136,15 +146,15 @@ def collect():
                 if r: return
                 r = puller(missing_days('fitbit_activities', service, fb), activities, service, fb)
                 if r: return
-                r = puller(missing_days('fitbit_sleep', service, fb), activities, service, fb)
+                r = puller(missing_days('fitbit_sleep', service, fb), sleep, service, fb)
                 if r: return
-                r = puller(missing_days('fitbit_bp', service, fb), activities, service, fb)
+                r = puller(missing_days('fitbit_bp', service, fb), bp, service, fb)
                 if r: return
-                r = puller(missing_days('fitbit_foods_log_water', service, fb), activities, service, fb)
+                r = puller(missing_days('fitbit_foods_log_water', service, fb), foods_log_water, service, fb)
                 if r: return
-                r = puller(missing_days('fitbit_foods_log', service, fb), activities, service, fb)
+                r = puller(missing_days('fitbit_foods_log', service, fb), foods_log, service, fb)
                 if r: return
 
 
-print(datetime.datetime.today())
+logging.info("Starting")
 collect()
